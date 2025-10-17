@@ -5,7 +5,7 @@ import { appConfig } from './config/app.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable CORS for mobile app
   app.enableCors({
     origin: true,
@@ -14,13 +14,16 @@ async function bootstrap() {
   });
 
   // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   await app.listen(appConfig.app.port);
   console.log(`🚀 Backend running on port ${appConfig.app.port}`);
 }
-bootstrap();
+
+void bootstrap();
