@@ -1,5 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { Product } from './product.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Payment } from './payment.entity';
 
 @Entity('transactions')
@@ -13,10 +19,10 @@ export class Transaction {
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
 
-  @Column({ 
-    type: 'enum', 
+  @Column({
+    type: 'enum',
     enum: ['PENDING', 'COMPLETED', 'FAILED', 'CANCELLED'],
-    default: 'PENDING' 
+    default: 'PENDING',
   })
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
