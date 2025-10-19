@@ -13,6 +13,3 @@ import { Product } from '../../entities/product.entity';
   exports: [TransactionsService],
 })
 export class TransactionsModule {}
-
-
-
