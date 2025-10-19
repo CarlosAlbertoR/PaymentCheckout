@@ -67,7 +67,10 @@ export class WompiService {
 
       return response.data.data.id;
     } catch (error) {
-      console.error('Error creating payment token:', error.response?.data || error.message);
+      console.error(
+        'Error creating payment token:',
+        error.response?.data || error.message,
+      );
       throw new HttpException(
         'Failed to create payment token',
         HttpStatus.BAD_REQUEST,
@@ -75,7 +78,10 @@ export class WompiService {
     }
   }
 
-  async processPayment(processPaymentDto: ProcessPaymentDto, creditCardData: any): Promise<WompiPaymentResponse> {
+  async processPayment(
+    processPaymentDto: ProcessPaymentDto,
+    creditCardData: any,
+  ): Promise<WompiPaymentResponse> {
     try {
       // Crear token de pago
       const paymentToken = await this.createPaymentToken(creditCardData);
@@ -100,7 +106,10 @@ export class WompiService {
 
       return response.data;
     } catch (error) {
-      console.error('Error processing payment:', error.response?.data || error.message);
+      console.error(
+        'Error processing payment:',
+        error.response?.data || error.message,
+      );
       throw new HttpException(
         'Failed to process payment with Wompi',
         HttpStatus.BAD_REQUEST,
@@ -108,7 +117,9 @@ export class WompiService {
     }
   }
 
-  async getTransactionStatus(transactionId: string): Promise<WompiPaymentResponse> {
+  async getTransactionStatus(
+    transactionId: string,
+  ): Promise<WompiPaymentResponse> {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${this.baseUrl}/transactions/${transactionId}`),
@@ -116,7 +127,10 @@ export class WompiService {
 
       return response.data;
     } catch (error) {
-      console.error('Error getting transaction status:', error.response?.data || error.message);
+      console.error(
+        'Error getting transaction status:',
+        error.response?.data || error.message,
+      );
       throw new HttpException(
         'Failed to get transaction status',
         HttpStatus.BAD_REQUEST,
@@ -125,10 +139,13 @@ export class WompiService {
   }
 
   // Método para simular pagos en sandbox (para testing)
-  async simulatePayment(processPaymentDto: ProcessPaymentDto, creditCardData: any): Promise<WompiPaymentResponse> {
+  async simulatePayment(
+    processPaymentDto: ProcessPaymentDto,
+    creditCardData: any,
+  ): Promise<WompiPaymentResponse> {
     // En sandbox, podemos simular diferentes escenarios
     const isApproved = this.simulatePaymentApproval(creditCardData.number);
-    
+
     const mockResponse: WompiPaymentResponse = {
       data: {
         id: `wompi_${Date.now()}`,
@@ -148,7 +165,9 @@ export class WompiService {
           },
         },
         status: isApproved ? 'APPROVED' : 'DECLINED',
-        status_message: isApproved ? 'Transacción aprobada' : 'Transacción rechazada',
+        status_message: isApproved
+          ? 'Transacción aprobada'
+          : 'Transacción rechazada',
         created_at: new Date().toISOString(),
         finalized_at: new Date().toISOString(),
       },

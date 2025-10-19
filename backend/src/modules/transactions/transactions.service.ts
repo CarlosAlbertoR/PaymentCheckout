@@ -41,14 +41,14 @@ export class TransactionsService {
     return this.transactionRepository.save(transaction);
   }
 
-  async findOne(id: string): Promise<Transaction | null> {
+  findOne(id: string): Promise<Transaction | null> {
     return this.transactionRepository.findOne({
       where: { id },
       relations: ['payments'],
     });
   }
 
-  async findByTransactionNumber(
+  findByTransactionNumber(
     transactionNumber: string,
   ): Promise<Transaction | null> {
     return this.transactionRepository.findOne({
@@ -90,8 +90,14 @@ export class TransactionsService {
     return this.paymentRepository.save(payment);
   }
 
-  async updatePaymentStatus(paymentId: string, status: 'PENDING' | 'APPROVED' | 'DECLINED' | 'ERROR', wompiResponse?: any): Promise<Payment> {
-    const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
+  async updatePaymentStatus(
+    paymentId: string,
+    status: 'PENDING' | 'APPROVED' | 'DECLINED' | 'ERROR',
+    wompiResponse?: any,
+  ): Promise<Payment> {
+    const payment = await this.paymentRepository.findOne({
+      where: { id: paymentId },
+    });
     if (!payment) {
       throw new NotFoundException('Payment not found');
     }
@@ -99,7 +105,8 @@ export class TransactionsService {
     payment.status = status;
     if (wompiResponse) {
       payment.wompiResponse = wompiResponse;
-      payment.wompiTransactionId = wompiResponse.id || wompiResponse.transaction_id;
+      payment.wompiTransactionId =
+        wompiResponse.id || wompiResponse.transaction_id;
     }
 
     const updatedPayment = await this.paymentRepository.save(payment);
@@ -107,9 +114,15 @@ export class TransactionsService {
     // Actualizar el stock de productos si el pago fue aprobado
     if (status === 'APPROVED') {
       await this.updateProductStock(updatedPayment.transactionId);
-      await this.updateTransactionStatus(updatedPayment.transactionId, 'COMPLETED');
+      await this.updateTransactionStatus(
+        updatedPayment.transactionId,
+        'COMPLETED',
+      );
     } else if (status === 'DECLINED' || status === 'ERROR') {
-      await this.updateTransactionStatus(updatedPayment.transactionId, 'FAILED');
+      await this.updateTransactionStatus(
+        updatedPayment.transactionId,
+        'FAILED',
+      );
     }
 
     return updatedPayment;
@@ -122,7 +135,9 @@ export class TransactionsService {
     }
 
     for (const productItem of transaction.products) {
-      const product = await this.productRepository.findOne({ where: { id: productItem.productId } });
+      const product = await this.productRepository.findOne({
+        where: { id: productItem.productId },
+      });
       if (product && product.stock >= productItem.quantity) {
         product.stock -= productItem.quantity;
         await this.productRepository.save(product);
@@ -132,28 +147,36 @@ export class TransactionsService {
 
   private async validateStock(products: any[]): Promise<void> {
     for (const productItem of products) {
-      const product = await this.productRepository.findOne({ where: { id: productItem.productId } });
-      
+      const product = await this.productRepository.findOne({
+        where: { id: productItem.productId },
+      });
+
       if (!product) {
         throw new Error(`Product with id ${productItem.productId} not found`);
       }
-      
+
       if (product.stock < productItem.quantity) {
-        throw new Error(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${productItem.quantity}`);
+        throw new Error(
+          `Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${productItem.quantity}`,
+        );
       }
     }
   }
 
-  async completePayment(completePaymentDto: CompletePaymentDto): Promise<{ transaction: Transaction; payment: Payment; wompiResponse: any }> {
+  async completePayment(completePaymentDto: CompletePaymentDto): Promise<{
+    transaction: Transaction;
+    payment: Payment;
+    wompiResponse: any;
+  }> {
     // 1. Crear transacción
     const createTransactionDto = {
       products: completePaymentDto.products,
       customerInfo: completePaymentDto.customerInfo,
       totalAmount: completePaymentDto.totalAmount,
     };
-    
+
     const transaction = await this.createTransaction(createTransactionDto);
-    
+
     // 2. Crear pago
     const payment = await this.processPayment({
       transactionId: transaction.id,
@@ -162,17 +185,20 @@ export class TransactionsService {
       reference: transaction.transactionNumber,
       description: completePaymentDto.description,
     });
-    
+
     // 3. Procesar con Wompi (simulado para sandbox)
-    const wompiResponse = await this.simulateWompiPayment(completePaymentDto, transaction.transactionNumber);
-    
+    const wompiResponse = this.simulateWompiPayment(
+      completePaymentDto,
+      transaction.transactionNumber,
+    );
+
     // 4. Actualizar estado del pago
     const updatedPayment = await this.updatePaymentStatus(
       payment.id,
       wompiResponse.data.status === 'APPROVED' ? 'APPROVED' : 'DECLINED',
-      wompiResponse
+      wompiResponse,
     );
-    
+
     return {
       transaction,
       payment: updatedPayment,
@@ -180,10 +206,15 @@ export class TransactionsService {
     };
   }
 
-  private async simulateWompiPayment(completePaymentDto: CompletePaymentDto, reference: string): Promise<any> {
+  private simulateWompiPayment(
+    completePaymentDto: CompletePaymentDto,
+    reference: string,
+  ): any {
     // Simular respuesta de Wompi para sandbox
-    const isApproved = this.simulatePaymentApproval(completePaymentDto.creditCard.number);
-    
+    const isApproved = this.simulatePaymentApproval(
+      completePaymentDto.creditCard.number,
+    );
+
     return {
       data: {
         id: `wompi_${Date.now()}`,
@@ -203,7 +234,9 @@ export class TransactionsService {
           },
         },
         status: isApproved ? 'APPROVED' : 'DECLINED',
-        status_message: isApproved ? 'Transacción aprobada' : 'Transacción rechazada',
+        status_message: isApproved
+          ? 'Transacción aprobada'
+          : 'Transacción rechazada',
         created_at: new Date().toISOString(),
         finalized_at: new Date().toISOString(),
       },
