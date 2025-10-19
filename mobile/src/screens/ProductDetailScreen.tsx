@@ -41,8 +41,12 @@ const ProductDetailScreen: React.FC = () => {
       quantity,
       imageUrl: product.imageUrl,
     };
+    console.log("🛒 Adding to cart:", cartItem);
     dispatch(addToCart(cartItem));
-    Alert.alert("Added to Cart", "Item has been added to your shopping cart");
+    Alert.alert(
+      "Added to Cart",
+      `Added ${quantity} item(s) to your shopping cart`
+    );
   };
 
   const handleBuyNow = () => {

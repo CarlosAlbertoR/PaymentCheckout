@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,8 +16,12 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme, Card, Button, Chip, FAB } from "react-native-paper";
 import { RootStackParamList, Product } from "../types";
 import { RootState, AppDispatch } from "../store";
-import { fetchProducts } from "../store/slices/productsSlice";
-import { addToCart } from "../store/slices/cartSlice";
+import {
+  fetchProducts,
+  fetchCategories,
+  setSelectedCategory,
+} from "../store/slices/productsSlice";
+import { addQuantityToCart } from "../store/slices/cartSlice";
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -26,14 +31,21 @@ const HomeScreen: React.FC = () => {
   const theme = useTheme();
   const {
     items: products,
+    categories,
+    selectedCategory,
     loading,
     error,
   } = useSelector((state: RootState) => state.products);
   const { items: cartItems } = useSelector((state: RootState) => state.cart);
 
   useEffect(() => {
+    dispatch(fetchCategories());
     dispatch(fetchProducts());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchProducts(selectedCategory));
+  }, [dispatch, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
     const cartItem = {
@@ -43,8 +55,25 @@ const HomeScreen: React.FC = () => {
       quantity: 1,
       imageUrl: product.imageUrl,
     };
-    dispatch(addToCart(cartItem));
+    dispatch(addQuantityToCart(cartItem));
     Alert.alert("Added to Cart", "Item has been added to your shopping cart");
+  };
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleCategoryChange = (category: string) => {
+    dispatch(setSelectedCategory(category));
+
+    // Auto-scroll to selected category for better UX
+    const categoryIndex = categoryOptions.findIndex(
+      (opt) => opt.value === category
+    );
+    if (scrollViewRef.current && categoryIndex >= 0) {
+      scrollViewRef.current.scrollTo({
+        x: categoryIndex * 80, // Approximate chip width + margin
+        animated: true,
+      });
+    }
   };
 
   const renderProduct = ({ item }: { item: Product }) => (
@@ -54,12 +83,22 @@ const HomeScreen: React.FC = () => {
     >
       <Card.Cover source={{ uri: item.imageUrl }} style={styles.productImage} />
       <Card.Content>
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productDescription} numberOfLines={2}>
+        <Text style={[styles.productName, { color: theme.colors.onSurface }]}>
+          {item.name}
+        </Text>
+        <Text
+          style={[
+            styles.productDescription,
+            { color: theme.colors.onSurfaceVariant },
+          ]}
+          numberOfLines={2}
+        >
           {item.description}
         </Text>
         <View style={styles.productFooter}>
-          <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
+          <Text style={[styles.productPrice, { color: theme.colors.primary }]}>
+            ${item.price.toFixed(2)}
+          </Text>
           <Button
             mode="contained"
             onPress={() => handleAddToCart(item)}
@@ -76,17 +115,33 @@ const HomeScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading catalog...</Text>
+        <Text
+          style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}
+        >
+          Loading catalog...
+        </Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Error: {error}</Text>
+      <View
+        style={[
+          styles.errorContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>
+          Error: {error}
+        </Text>
         <Button
           mode="contained"
           onPress={() => dispatch(fetchProducts())}
@@ -98,18 +153,81 @@ const HomeScreen: React.FC = () => {
     );
   }
 
+  // Crear opciones para SegmentedButtons
+  const categoryOptions = [
+    { value: "all", label: "All" },
+    ...categories.map((category) => ({
+      value: category,
+      label: category.charAt(0).toUpperCase() + category.slice(1),
+    })),
+  ];
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Shop</Text>
-        <Chip
-          icon="cart"
-          onPress={() => navigation.navigate("Cart")}
-          style={styles.cartChip}
-        >
-          Cart ({cartItems.length})
-        </Chip>
-      </View>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <Card style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+        <Card.Content style={styles.headerContent}>
+          <View style={styles.headerInfo}>
+            <Text
+              style={[styles.headerTitle, { color: theme.colors.onSurface }]}
+            >
+              Shop
+            </Text>
+            <Text
+              style={[
+                styles.headerSubtitle,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Discover amazing products
+            </Text>
+          </View>
+          <Chip
+            icon="cart"
+            onPress={() => navigation.navigate("Cart")}
+            style={[styles.cartChip, { backgroundColor: theme.colors.primary }]}
+            textStyle={{ color: theme.colors.onPrimary }}
+          >
+            Cart ({cartItems.length})
+          </Chip>
+        </Card.Content>
+      </Card>
+
+      {categories.length > 0 && (
+        <View style={styles.filterContainer}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipsContainer}
+          >
+            {categoryOptions.map((option) => (
+              <Chip
+                key={option.value}
+                selected={selectedCategory === option.value}
+                onPress={() => handleCategoryChange(option.value)}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === option.value && {
+                    backgroundColor: theme.colors.primary,
+                  },
+                ]}
+                textStyle={{
+                  color:
+                    selectedCategory === option.value
+                      ? theme.colors.onPrimary
+                      : theme.colors.onSurface,
+                  fontSize: 12,
+                }}
+                compact
+              >
+                {option.label}
+              </Chip>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <FlatList
         data={products}
@@ -121,7 +239,7 @@ const HomeScreen: React.FC = () => {
 
       <FAB
         icon="cart"
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         onPress={() => navigation.navigate("Cart")}
         label={`${cartItems.length}`}
       />
@@ -132,24 +250,44 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7FAFC", // Wompi background
   },
   header: {
+    margin: 16,
+    marginBottom: 8,
+    elevation: 2,
+  },
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    backgroundColor: "#ffffff", // Wompi surface
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0", // Wompi surfaceVariant
+  },
+  headerInfo: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#1A202C", // Wompi onSurface
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
   },
   cartChip: {
-    backgroundColor: "#00D4AA", // Wompi primary
+    // Theme colors applied dynamically
+  },
+  filterContainer: {
+    paddingVertical: 6,
+    backgroundColor: "transparent",
+  },
+  chipsContainer: {
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  categoryChip: {
+    height: 32,
+    marginRight: 2,
   },
   productsList: {
     padding: 16,
@@ -164,12 +302,10 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#1A202C", // Wompi onSurface
     marginBottom: 8,
   },
   productDescription: {
     fontSize: 14,
-    color: "#4A5568", // Wompi onSurfaceVariant
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -181,7 +317,6 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#00D4AA", // Wompi primary
   },
   addButton: {
     // Paper Button styles are handled by the component
@@ -194,29 +329,24 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: "#00D4AA", // Wompi primary
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F7FAFC", // Wompi background
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#4A5568", // Wompi onSurfaceVariant
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#F7FAFC", // Wompi background
   },
   errorText: {
     fontSize: 16,
-    color: "#E53E3E", // Wompi error
     textAlign: "center",
     marginBottom: 16,
   },
