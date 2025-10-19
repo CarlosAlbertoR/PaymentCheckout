@@ -1,4 +1,12 @@
-import { IsArray, IsNotEmpty, IsString, IsNumber, ValidateNested, IsOptional, Matches } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  ValidateNested,
+  IsOptional,
+  Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ProductItemDto {
@@ -37,7 +45,9 @@ export class CreditCardDto {
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(0[1-9]|1[0-2])\/\d{2}$/, { message: 'Expiry must be in MM/YY format' })
+  @Matches(/^(0[1-9]|1[0-2])\/\d{2}$/, {
+    message: 'Expiry must be in MM/YY format',
+  })
   expiry: string;
 
   @IsString()

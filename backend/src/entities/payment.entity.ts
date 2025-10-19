@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Transaction } from './transaction.entity';
 
 @Entity('payments')
@@ -15,10 +23,10 @@ export class Payment {
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 
-  @Column({ 
-    type: 'enum', 
+  @Column({
+    type: 'enum',
     enum: ['PENDING', 'APPROVED', 'DECLINED', 'ERROR'],
-    default: 'PENDING' 
+    default: 'PENDING',
   })
   status: 'PENDING' | 'APPROVED' | 'DECLINED' | 'ERROR';
 
@@ -28,7 +36,7 @@ export class Payment {
   @Column('jsonb', { nullable: true })
   creditCardInfo: any;
 
-  @ManyToOne(() => Transaction, transaction => transaction.payments)
+  @ManyToOne(() => Transaction, (transaction) => transaction.payments)
   @JoinColumn({ name: 'transactionId' })
   transaction: Transaction;
 

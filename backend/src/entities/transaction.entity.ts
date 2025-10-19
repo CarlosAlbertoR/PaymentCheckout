@@ -32,7 +32,7 @@ export class Transaction {
   @Column('jsonb', { nullable: true })
   products: any[];
 
-  @OneToMany(() => Payment, payment => payment.transaction)
+  @OneToMany(() => Payment, (payment) => payment.transaction)
   payments: Payment[];
 
   @CreateDateColumn()
