@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import { Product } from '../../entities/product.entity';
 
 @Injectable()
@@ -8,13 +10,28 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly httpService: HttpService,
   ) {}
 
-  async findAll(): Promise<Product[]> {
-    return this.productRepository
+  async findAll(category?: string): Promise<Product[]> {
+    const query = this.productRepository
       .createQueryBuilder('product')
-      .where('product.stock > :stock', { stock: 0 })
-      .getMany();
+      .where('product.stock > :stock', { stock: 0 });
+
+    if (category && category !== 'all') {
+      query.andWhere('product.category = :category', { category });
+    }
+
+    return query.getMany();
+  }
+
+  async getCategories(): Promise<string[]> {
+    const categories = await this.productRepository
+      .createQueryBuilder('product')
+      .select('DISTINCT product.category', 'category')
+      .getRawMany();
+
+    return categories.map((cat) => cat.category);
   }
 
   async findOne(id: string): Promise<Product | null> {
@@ -35,40 +52,98 @@ export class ProductsService {
     return this.productRepository.save(product);
   }
 
-  async createSampleProducts(): Promise<void> {
-    const sampleProducts = [
-      {
-        name: 'iPhone 15 Pro',
-        description: 'Latest iPhone with advanced camera system',
-        price: 999.99,
-        stock: 10,
-        imageUrl: 'https://example.com/iphone15.jpg',
-      },
-      {
-        name: 'MacBook Air M2',
-        description: 'Ultra-thin laptop with M2 chip',
-        price: 1199.99,
-        stock: 5,
-        imageUrl: 'https://example.com/macbook.jpg',
-      },
-      {
-        name: 'AirPods Pro',
-        description: 'Wireless earbuds with noise cancellation',
-        price: 249.99,
-        stock: 20,
-        imageUrl: 'https://example.com/airpods.jpg',
-      },
-    ];
+  async syncWithFakeStoreAPI(): Promise<void> {
+    try {
+      // Limpiar productos existentes para evitar duplicados
+      await this.productRepository.clear();
 
-    for (const productData of sampleProducts) {
-      const existingProduct = await this.productRepository.findOne({
-        where: { name: productData.name },
-      });
+      // Obtener todos los productos primero (más rápido que por categoría)
+      const allProductsResponse = await firstValueFrom(
+        this.httpService.get('https://fakestoreapi.com/products'),
+      );
+      const allProducts = allProductsResponse.data;
 
-      if (!existingProduct) {
+      // Obtener categorías para mapear
+      const categoriesResponse = await firstValueFrom(
+        this.httpService.get('https://fakestoreapi.com/products/categories'),
+      );
+      const categories = categoriesResponse.data;
+
+      let totalProducts = 0;
+
+      // Procesar todos los productos
+      for (const fakeProduct of allProducts) {
+        // Mapear datos de FakeStoreAPI a nuestro schema
+        const productData = {
+          name: fakeProduct.title,
+          description: fakeProduct.description,
+          price: fakeProduct.price,
+          stock: Math.floor(Math.random() * 50) + 1, // Stock aleatorio entre 1-50
+          imageUrl: fakeProduct.image,
+          category: fakeProduct.category,
+        };
+
         const product = this.productRepository.create(productData);
         await this.productRepository.save(product);
+        totalProducts++;
+      }
+
+      // Agregar productos adicionales con variaciones para llegar a ~100
+      await this.addVariationsToReach100(categories);
+
+      console.log(
+        `✅ Sincronizados ${totalProducts} productos de FakeStoreAPI`,
+      );
+    } catch (error) {
+      console.error('❌ Error sincronizando con FakeStoreAPI:', error);
+      throw new Error('Failed to sync with FakeStoreAPI');
+    }
+  }
+
+  private async addVariationsToReach100(categories: string[]): Promise<void> {
+    // Obtener productos existentes para crear variaciones
+    const existingProducts = await this.productRepository.find();
+    
+    if (existingProducts.length >= 100) return;
+
+    const variationsNeeded = 100 - existingProducts.length;
+    let addedVariations = 0;
+
+    for (const product of existingProducts) {
+      if (addedVariations >= variationsNeeded) break;
+
+      // Crear variaciones del producto (diferentes colores, tamaños, etc.)
+      const variations = [
+        { suffix: ' - Black', priceMultiplier: 1.0 },
+        { suffix: ' - White', priceMultiplier: 1.1 },
+        { suffix: ' - Premium', priceMultiplier: 1.5 },
+        { suffix: ' - Pro', priceMultiplier: 1.3 },
+        { suffix: ' - Max', priceMultiplier: 1.8 },
+      ];
+
+      for (const variation of variations) {
+        if (addedVariations >= variationsNeeded) break;
+
+        const variationData = {
+          name: product.name + variation.suffix,
+          description: product.description + ` (${variation.suffix.replace(' - ', '')} version)`,
+          price: product.price * variation.priceMultiplier,
+          stock: Math.floor(Math.random() * 30) + 1,
+          imageUrl: product.imageUrl,
+          category: product.category,
+        };
+
+        const variationProduct = this.productRepository.create(variationData);
+        await this.productRepository.save(variationProduct);
+        addedVariations++;
       }
     }
+
+    console.log(`✅ Agregadas ${addedVariations} variaciones de productos`);
+  }
+
+  async createSampleProducts(): Promise<void> {
+    // Solo usar FakeStoreAPI
+    await this.syncWithFakeStoreAPI();
   }
 }
