@@ -183,12 +183,6 @@ export class WompiService {
     try {
       console.log('💳 Processing payment with Wompi...');
 
-      // Obtener acceptance token
-      const acceptanceToken = await this.getAcceptanceToken();
-
-      // Crear token de pago
-      const paymentToken = await this.createPaymentToken(creditCardData);
-
       // Validar monto mínimo (1000 centavos = $10.00 COP)
       const minimumAmount = 1000;
       const amountInCents = Math.round(processPaymentDto.amount);
@@ -199,6 +193,12 @@ export class WompiService {
           HttpStatus.BAD_REQUEST,
         );
       }
+
+      // Obtener acceptance token
+      const acceptanceToken = await this.getAcceptanceToken();
+
+      // Crear token de pago
+      const paymentToken = await this.createPaymentToken(creditCardData);
 
       // Generar signature para validar integridad
       const signature = this.generateSignature({

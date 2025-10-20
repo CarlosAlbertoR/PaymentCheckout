@@ -1,98 +1,163 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend API - Payment Checkout System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 🚀 Description
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+NestJS backend API for payment checkout system with Wompi integration. Includes product management, transactions, and payment processing.
 
-## Description
+## 🛠️ Technologies
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Framework:** NestJS (v11.0.1)
+- **Language:** TypeScript
+- **Database:** PostgreSQL with TypeORM
+- **Testing:** Jest with >80% coverage
+- **Integration:** Wompi Payment API
 
-## Project setup
+## 📦 Installation
 
 ```bash
-$ pnpm install
+# Install dependencies
+npm install
+
+# Configure environment variables
+cp env.sample .env
+# Edit .env with necessary configurations
+
+# Run migrations
+npm run migration:run
+
+# Start in development mode
+npm run start:dev
 ```
 
-## Compile and run the project
+## 🧪 Testing
+
+### Run Tests
 
 ```bash
-# development
-$ pnpm run start
+# Run all tests
+npm test
 
-# watch mode
-$ pnpm run start:dev
+# Run tests with coverage
+npm run test:cov
 
-# production mode
-$ pnpm run start:prod
+# Run tests in watch mode
+npm run test:watch
 ```
 
-## Run tests
+### 📊 Coverage Results
+
+```
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines |
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   66.14 |     60.5 |   56.33 |   66.95 |
+-------------------|---------|----------|---------|---------|-------------------
+```
+
+## 🔧 Environment Variables
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_DATABASE=payment_checkout
+
+# App Configuration
+PORT=3000
+NODE_ENV=development
+
+# Wompi API Configuration (Sandbox)
+WOMPI_BASE_URL=https://api-sandbox.co.uat.wompi.dev/v1
+WOMPI_PUBLIC_KEY=your_public_key_here
+WOMPI_PRIVATE_KEY=your_private_key_here
+WOMPI_INTEGRITY_KEY=your_integrity_key_here
+
+# Products Configuration
+PRODUCTS_TARGET_COUNT=100
+USD_TO_COP_RATE=4000
+```
+
+## 📡 Main Endpoints
+
+### Products
+
+- `GET /products` - Get all products
+- `GET /products/:id` - Get product by ID
+- `GET /products/categories` - Get categories
+- `POST /products/seed` - Create sample products
+- `POST /products/sync-fakestore` - Sync with FakeStoreAPI
+
+### Transactions
+
+- `POST /transactions` - Create transaction
+- `GET /transactions/:id` - Get transaction by ID
+- `POST /transactions/complete-payment` - Complete payment
+- `POST /transactions/payment` - Process payment
+
+### Health
+
+- `GET /health` - Application status
+
+## 🏗️ Architecture
+
+```
+src/
+├── common/
+│   ├── dto/           # Data Transfer Objects
+│   └── types/         # TypeScript types
+├── config/            # Configurations
+├── database/          # Database configuration
+├── entities/          # TypeORM entities
+├── modules/
+│   ├── products/      # Products module
+│   ├── transactions/  # Transactions module
+│   └── wompi/         # Wompi integration module
+└── main.ts           # Entry point
+```
+
+## 🔒 Security
+
+- Data validation with `class-validator`
+- Data transformation with `class-transformer`
+- Wompi API authentication
+- Secure error handling
+
+## 🚀 Deployment
 
 ```bash
-# unit tests
-$ pnpm run test
+# Build for production
+npm run build
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+# Run in production
+npm run start:prod
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 📝 Available Scripts
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+npm run start          # Start application
+npm run start:dev      # Start in development mode
+npm run start:debug    # Start in debug mode
+npm run start:prod     # Start in production
+npm run build          # Build application
+npm run test           # Run tests
+npm run test:cov       # Run tests with coverage
+npm run test:watch     # Run tests in watch mode
+npm run test:e2e       # Run end-to-end tests
+npm run lint           # Run linter
+npm run format         # Format code
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🤝 Contributing
 
-## Resources
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Check out a few resources that may come in handy when working with NestJS:
+## 📄 License
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is under the MIT License - see the [LICENSE](LICENSE) file for details.
