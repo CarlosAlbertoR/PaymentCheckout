@@ -87,6 +87,11 @@ const cartSlice = createSlice({
       );
       if (item) {
         item.quantity = action.payload.quantity;
+        if (item.quantity <= 0) {
+          state.items = state.items.filter(
+            (i) => i.productId !== action.payload.productId
+          );
+        }
 
         // Recalcular total
         state.total = state.items.reduce(
