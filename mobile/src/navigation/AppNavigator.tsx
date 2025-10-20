@@ -25,7 +25,7 @@ const AppNavigator: React.FC = () => {
         initialRouteName="Splash"
         screenOptions={{
           headerStyle: {
-            backgroundColor: theme.colors.onPrimaryContainer,
+            backgroundColor: theme.colors.primary,
           },
           headerTintColor: theme.colors.onPrimary,
           headerTitleStyle: {

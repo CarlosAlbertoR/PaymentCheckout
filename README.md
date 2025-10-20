@@ -2,6 +2,13 @@
 
 This repository contains a Backend API (NestJS) and a Mobile App (React Native + Expo) implementing a 7-step credit card checkout integrating with Wompi Sandbox.
 
+## Clone
+
+```bash
+git clone https://github.com/CarlosAlbertoR/PaymentCheckout
+cd PaymentCheckout
+```
+
 ## Structure
 
 ```
