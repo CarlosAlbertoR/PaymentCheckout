@@ -5,9 +5,13 @@ import { TransactionsService } from './transactions.service';
 import { Transaction } from '../../entities/transaction.entity';
 import { Payment } from '../../entities/payment.entity';
 import { Product } from '../../entities/product.entity';
+import { WompiModule } from '../wompi/wompi.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction, Payment, Product])],
+  imports: [
+    TypeOrmModule.forFeature([Transaction, Payment, Product]),
+    WompiModule,
+  ],
   controllers: [TransactionsController],
   providers: [TransactionsService],
   exports: [TransactionsService],

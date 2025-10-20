@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Product } from '../../entities/product.entity';
+import { appConfig } from '../../config/app.config';
 
 @Injectable()
 export class ProductsService {
@@ -74,10 +75,13 @@ export class ProductsService {
       // Procesar todos los productos
       for (const fakeProduct of allProducts) {
         // Mapear datos de FakeStoreAPI a nuestro schema
+        // Convertir precio de USD a COP usando variable de entorno
         const productData = {
           name: fakeProduct.title,
           description: fakeProduct.description,
-          price: fakeProduct.price,
+          price: Math.round(
+            Number(fakeProduct.price) * appConfig.products.usdToCopRate,
+          ), // Convertir a centavos COP
           stock: Math.floor(Math.random() * 50) + 1, // Stock aleatorio entre 1-50
           imageUrl: fakeProduct.image,
           category: fakeProduct.category,
@@ -92,7 +96,7 @@ export class ProductsService {
       await this.addVariationsToReach100(categories);
 
       console.log(
-        `✅ Sincronizados ${totalProducts} productos de FakeStoreAPI`,
+        `✅ Sincronizados ${totalProducts} productos de FakeStoreAPI (objetivo: ${appConfig.products.targetCount})`,
       );
     } catch (error) {
       console.error('❌ Error sincronizando con FakeStoreAPI:', error);
@@ -103,10 +107,11 @@ export class ProductsService {
   private async addVariationsToReach100(categories: string[]): Promise<void> {
     // Obtener productos existentes para crear variaciones
     const existingProducts = await this.productRepository.find();
-    
-    if (existingProducts.length >= 100) return;
 
-    const variationsNeeded = 100 - existingProducts.length;
+    if (existingProducts.length >= appConfig.products.targetCount) return;
+
+    const variationsNeeded =
+      appConfig.products.targetCount - existingProducts.length;
     let addedVariations = 0;
 
     for (const product of existingProducts) {
@@ -126,7 +131,9 @@ export class ProductsService {
 
         const variationData = {
           name: product.name + variation.suffix,
-          description: product.description + ` (${variation.suffix.replace(' - ', '')} version)`,
+          description:
+            product.description +
+            ` (${variation.suffix.replace(' - ', '')} version)`,
           price: product.price * variation.priceMultiplier,
           stock: Math.floor(Math.random() * 30) + 1,
           imageUrl: product.imageUrl,

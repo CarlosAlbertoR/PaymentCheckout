@@ -15,6 +15,7 @@ import { useTheme, Card, Button, Chip, Divider } from "react-native-paper";
 import { RootStackParamList } from "../types";
 import { AppDispatch } from "../store";
 import { addToCart } from "../store/slices/cartSlice";
+import { formatPriceCOP } from "../utils/currency";
 
 type ProductDetailScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -66,7 +67,9 @@ const ProductDetailScreen: React.FC = () => {
       <Card style={styles.contentCard}>
         <Card.Content>
           <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
+          <Text style={styles.productPrice}>
+            {formatPriceCOP(product.price)}
+          </Text>
 
           <Divider style={styles.divider} />
 

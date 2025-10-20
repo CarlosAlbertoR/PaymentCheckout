@@ -24,4 +24,10 @@ export const appConfig = {
     port: parseInt((process.env.PORT as string) || '3000'),
     nodeEnv: (process.env.NODE_ENV as string) || 'development',
   },
+  products: {
+    targetCount: parseInt(
+      (process.env.PRODUCTS_TARGET_COUNT as string) || '100',
+    ),
+    usdToCopRate: parseInt((process.env.USD_TO_COP_RATE as string) || '4000'),
+  },
 };

@@ -28,18 +28,25 @@ class ApiService {
     };
 
     try {
+      console.log(`🌐 Making request to: ${url}`);
       const response = await fetch(url, defaultOptions);
+
+      console.log(`📡 Response status: ${response.status}`);
+      console.log(`📡 Response ok: ${response.ok}`);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ API Error [${endpoint}]:`, errorData);
         throw new Error(
           errorData.message || `HTTP ${response.status}: ${response.statusText}`
         );
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log(`✅ API Success [${endpoint}]:`, result);
+      return result;
     } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error);
+      console.error(`❌ API Error [${endpoint}]:`, error);
       throw error;
     }
   }

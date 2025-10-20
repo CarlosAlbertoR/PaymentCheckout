@@ -26,7 +26,8 @@ export interface CustomerInfo {
 
 export interface CreditCardInfo {
   number: string;
-  expiry: string;
+  exp_month: string; // MM
+  exp_year: string; // YY
   cvc: string;
   cardholderName: string;
 }
@@ -42,8 +43,14 @@ export interface Transaction {
   updatedAt: string;
 }
 
+export interface ProductItem {
+  productId: string;
+  quantity: number;
+  price: number;
+}
+
 export interface CompletePaymentRequest {
-  products: CartItem[];
+  products: ProductItem[];
   customerInfo: CustomerInfo;
   totalAmount: number;
   creditCard: CreditCardInfo;
@@ -69,7 +76,7 @@ export type RootStackParamList = {
   ProductDetail: { product: Product };
   Cart: undefined;
   Checkout: undefined;
-  PaymentForm: undefined;
-  PaymentSummary: undefined;
+  PaymentForm: { customerInfo?: CustomerInfo };
+  PaymentSummary: { customerInfo?: CustomerInfo };
   TransactionResult: { transaction: Transaction };
 };
