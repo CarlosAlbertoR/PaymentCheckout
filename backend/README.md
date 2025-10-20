@@ -134,6 +134,55 @@ npm run build
 npm run start:prod
 ```
 
+## 🐳 Docker
+
+### Compose (recommended)
+
+Prerequisites: Docker and Docker Compose installed.
+
+1. Create environment file from sample and adjust values:
+
+```bash
+cp env.sample .env
+```
+
+2. Start services (API + Postgres) using the docker-compose at repo root:
+
+```bash
+# From repo root
+docker compose up -d
+
+# Logs
+docker compose logs -f backend
+```
+
+The compose file exposes:
+
+- Backend API: http://localhost:3000
+- Postgres: localhost:5432 (db: payment_checkout)
+
+3. Run migrations inside the backend container:
+
+```bash
+docker compose exec backend npm run migration:run
+```
+
+4. Seed products (optional):
+
+```bash
+curl -X POST http://localhost:3000/products/seed
+# or sync from fakestore
+curl -X POST http://localhost:3000/products/sync-fakestore
+```
+
+### Build image locally
+
+```bash
+# From backend folder
+docker build -t payment-backend .
+docker run --env-file .env -p 3000:3000 payment-backend
+```
+
 ## 📝 Available Scripts
 
 ```bash
