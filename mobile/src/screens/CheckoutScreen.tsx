@@ -7,6 +7,7 @@ import { useTheme, TextInput, Button, Card, Divider } from "react-native-paper";
 import { RootStackParamList, CustomerInfo } from "../types";
 import { RootState, AppDispatch } from "../store";
 import { setCreditCard } from "../store/slices/paymentSlice";
+import { formatPriceCOP, formatTotalCOP } from "../utils/currency";
 
 type CheckoutScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -50,8 +51,8 @@ const CheckoutScreen: React.FC = () => {
   const handleContinue = () => {
     if (!validateForm()) return;
 
-    // Guardar información del cliente en el estado global si es necesario
-    navigation.navigate("PaymentForm");
+    // Pasar información del cliente al PaymentForm
+    navigation.navigate("PaymentForm", { customerInfo });
   };
 
   return (
@@ -102,11 +103,11 @@ const CheckoutScreen: React.FC = () => {
               <View style={styles.orderItemInfo}>
                 <Text style={styles.orderItemName}>{item.name}</Text>
                 <Text style={styles.orderItemDetails}>
-                  Qty: {item.quantity} x ${item.price.toFixed(2)}
+                  Qty: {item.quantity} x {formatPriceCOP(item.price)}
                 </Text>
               </View>
               <Text style={styles.orderItemTotal}>
-                ${(item.price * item.quantity).toFixed(2)}
+                {formatPriceCOP(item.price * item.quantity)}
               </Text>
             </View>
           ))}
@@ -115,7 +116,7 @@ const CheckoutScreen: React.FC = () => {
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalAmount}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalAmount}>{formatTotalCOP(total)}</Text>
           </View>
         </Card.Content>
       </Card>

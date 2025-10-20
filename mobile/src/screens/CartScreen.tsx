@@ -19,6 +19,7 @@ import {
   updateQuantity,
   clearCart,
 } from "../store/slices/cartSlice";
+import { formatPriceCOP, formatTotalCOP } from "../utils/currency";
 
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, "Cart">;
 
@@ -83,7 +84,7 @@ const CartScreen: React.FC = () => {
           <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
           <View style={styles.itemInfo}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.itemPrice}>{formatPriceCOP(item.price)}</Text>
 
             <View style={styles.quantityControls}>
               <Button
@@ -115,7 +116,7 @@ const CartScreen: React.FC = () => {
 
           <View style={styles.itemActions}>
             <Text style={styles.itemTotal}>
-              ${(item.price * item.quantity).toFixed(2)}
+              {formatPriceCOP(item.price * item.quantity)}
             </Text>
             <Button
               mode="outlined"
@@ -170,7 +171,7 @@ const CartScreen: React.FC = () => {
               </Text>
             </View>
             <Chip icon="cart" style={styles.headerChip}>
-              ${total.toFixed(2)}
+              {formatTotalCOP(total)}
             </Chip>
           </View>
         </Card.Content>
@@ -188,7 +189,7 @@ const CartScreen: React.FC = () => {
         <Card.Content>
           <View style={styles.totalContainer}>
             <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalAmount}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalAmount}>{formatTotalCOP(total)}</Text>
           </View>
 
           <Divider style={styles.divider} />

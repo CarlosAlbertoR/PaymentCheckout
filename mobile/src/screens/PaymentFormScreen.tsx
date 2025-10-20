@@ -1,15 +1,10 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useTheme,
   Card,
@@ -18,23 +13,31 @@ import {
   Chip,
   Divider,
   ProgressBar,
+  HelperText,
 } from "react-native-paper";
-import { RootStackParamList, CreditCardInfo } from "../types";
+import { RootStackParamList, CustomerInfo, CreditCardInfo } from "../types";
 import { RootState, AppDispatch } from "../store";
 import {
   setCreditCard,
   setProcessing,
   setError,
 } from "../store/slices/paymentSlice";
+import { formatPriceCOP, formatTotalCOP } from "../utils/currency";
 import { processPayment } from "../store/slices/transactionSlice";
+import {
+  creditCardSchema,
+  CreditCardFormData,
+} from "../schemas/payment.schema";
 
 type PaymentFormScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "PaymentForm"
 >;
+type PaymentFormScreenRouteProp = RouteProp<RootStackParamList, "PaymentForm">;
 
 const PaymentFormScreen: React.FC = () => {
   const navigation = useNavigation<PaymentFormScreenNavigationProp>();
+  const route = useRoute<PaymentFormScreenRouteProp>();
   const dispatch = useDispatch<AppDispatch>();
   const theme = useTheme();
   const { items: cartItems, total } = useSelector(
@@ -42,49 +45,30 @@ const PaymentFormScreen: React.FC = () => {
   );
   const { isProcessing } = useSelector((state: RootState) => state.payment);
 
-  const [creditCard, setCreditCard] = useState<CreditCardInfo>({
-    number: "",
-    expiry: "",
-    cvc: "",
-    cardholderName: "",
-  });
-
-  const [customerInfo] = useState({
-    name: "Juan Pérez", // En una app real vendría del estado global
-    email: "juan@example.com",
-    phone: "+1234567890",
-  });
-
-  const handleInputChange = (field: keyof CreditCardInfo, value: string) => {
-    let formattedValue = value;
-
-    // Formatear número de tarjeta (agregar espacios cada 4 dígitos)
-    if (field === "number") {
-      formattedValue = value
-        .replace(/\s/g, "")
-        .replace(/(.{4})/g, "$1 ")
-        .trim();
-      if (formattedValue.length > 19) return; // Máximo 16 dígitos + 3 espacios
-    }
-
-    // Formatear fecha de expiración (MM/YY)
-    if (field === "expiry") {
-      formattedValue = value.replace(/\D/g, "");
-      if (formattedValue.length >= 2) {
-        formattedValue =
-          formattedValue.substring(0, 2) + "/" + formattedValue.substring(2, 4);
-      }
-      if (formattedValue.length > 5) return;
-    }
-
-    // Formatear CVC (máximo 4 dígitos)
-    if (field === "cvc") {
-      formattedValue = value.replace(/\D/g, "");
-      if (formattedValue.length > 4) return;
-    }
-
-    setCreditCard((prev) => ({ ...prev, [field]: formattedValue }));
+  // Obtener información del cliente desde los parámetros de navegación
+  const customerInfo: CustomerInfo = route.params?.customerInfo || {
+    name: "Test Customer",
+    email: "test@example.com",
   };
+
+  // Configurar react-hook-form con zod
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+  } = useForm<CreditCardFormData>({
+    resolver: zodResolver(creditCardSchema),
+    mode: "onChange",
+    defaultValues: {
+      number: "",
+      expiry: "",
+      cvc: "",
+      cardholderName: "",
+    },
+  });
+
+  const cardNumber = watch("number");
 
   const detectCardBrand = (cardNumber: string): string => {
     const number = cardNumber.replace(/\s/g, "");
@@ -94,67 +78,46 @@ const PaymentFormScreen: React.FC = () => {
     return "UNKNOWN";
   };
 
-  const validateCard = (): boolean => {
-    const number = creditCard.number.replace(/\s/g, "");
-    const expiry = creditCard.expiry;
-    const cvc = creditCard.cvc;
-
-    if (number.length !== 16) {
-      Alert.alert("Invalid Card", "Please enter a valid 16-digit card number");
-      return false;
-    }
-
-    if (!/^\d{2}\/\d{2}$/.test(expiry)) {
-      Alert.alert("Invalid Date", "Please enter expiry date in MM/YY format");
-      return false;
-    }
-
-    if (cvc.length < 3) {
-      Alert.alert("Invalid CVC", "Please enter a valid 3-digit CVC code");
-      return false;
-    }
-
-    if (!creditCard.cardholderName.trim()) {
-      Alert.alert("Required Field", "Please enter the cardholder name");
-      return false;
-    }
-
-    return true;
+  const formatCardNumber = (value: string): string => {
+    const cleaned = value.replace(/\s/g, "");
+    const formatted = cleaned.replace(/(.{4})/g, "$1 ").trim();
+    return formatted.substring(0, 19); // Máximo 16 dígitos + 3 espacios
   };
 
-  const handleProcessPayment = async () => {
-    if (!validateCard()) return;
-
-    dispatch(setProcessing(true));
-    dispatch(setError(null));
-
-    try {
-      const paymentData = {
-        products: cartItems,
-        customerInfo,
-        totalAmount: total,
-        creditCard,
-        currency: "USD",
-        description: `Compra de ${cartItems.length} productos`,
-      };
-
-      const result = await dispatch(
-        processPayment(paymentData) as any
-      ).unwrap();
-
-      dispatch(setCreditCard(creditCard) as any);
-      navigation.navigate("TransactionResult", {
-        transaction: result.transaction,
-      });
-    } catch (error: any) {
-      dispatch(setError(error.message || "Error al procesar el pago"));
-      Alert.alert("Error", error.message || "Error al procesar el pago");
-    } finally {
-      dispatch(setProcessing(false));
+  const formatExpiry = (value: string): string => {
+    const cleaned = value.replace(/\D/g, "");
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + "/" + cleaned.substring(2, 4);
     }
+    return cleaned;
   };
 
-  const cardBrand = detectCardBrand(creditCard.number);
+  const onSubmit = (data: CreditCardFormData) => {
+    // Los datos ya están validados por zod
+    console.log("✅ Form data validated:", data);
+
+    // Separar la fecha de expiración
+    const expiry = data.expiry.replace("/", ""); // "12/25" -> "1225"
+    const exp_month = expiry.substring(0, 2); // "12"
+    const exp_year = expiry.substring(2, 4); // "25" (YY, no YYYY)
+
+    // Crear objeto con fecha separada (sin campo expiry)
+    const creditCardData: CreditCardInfo = {
+      number: data.number,
+      cvc: data.cvc,
+      cardholderName: data.cardholderName,
+      exp_month,
+      exp_year,
+    };
+
+    // Guardar información de la tarjeta en el store
+    dispatch(setCreditCard(creditCardData));
+
+    // Navegar a PaymentSummaryScreen
+    navigation.navigate("PaymentSummary", { customerInfo });
+  };
+
+  const cardBrand = detectCardBrand(cardNumber);
 
   return (
     <ScrollView style={styles.container}>
@@ -162,19 +125,36 @@ const PaymentFormScreen: React.FC = () => {
         <Card.Content>
           <Text style={styles.sectionTitle}>Payment Information</Text>
 
-          <TextInput
-            label="Card Number *"
-            value={creditCard.number}
-            onChangeText={(value) => handleInputChange("number", value)}
-            placeholder="1234 5678 9012 3456"
-            keyboardType="numeric"
-            maxLength={19}
-            mode="outlined"
-            style={styles.input}
-            right={
-              cardBrand !== "UNKNOWN" && <TextInput.Icon icon="credit-card" />
-            }
+          <Controller
+            control={control}
+            name="number"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                label="Card Number *"
+                value={formatCardNumber(value)}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/\s/g, "");
+                  if (cleaned.length <= 16) {
+                    onChange(cleaned);
+                  }
+                }}
+                placeholder="1234 5678 9012 3456"
+                keyboardType="numeric"
+                maxLength={19}
+                mode="outlined"
+                style={styles.input}
+                error={!!errors.number}
+                right={
+                  cardBrand !== "UNKNOWN" && (
+                    <TextInput.Icon icon="credit-card" />
+                  )
+                }
+              />
+            )}
           />
+          <HelperText type="error" visible={!!errors.number}>
+            {errors.number?.message}
+          </HelperText>
 
           {cardBrand !== "UNKNOWN" && (
             <Chip icon="credit-card" style={styles.cardBrandChip}>
@@ -183,39 +163,79 @@ const PaymentFormScreen: React.FC = () => {
           )}
 
           <View style={styles.row}>
-            <TextInput
-              label="Expiry Date *"
-              value={creditCard.expiry}
-              onChangeText={(value) => handleInputChange("expiry", value)}
-              placeholder="MM/YY"
-              keyboardType="numeric"
-              maxLength={5}
-              mode="outlined"
-              style={[styles.input, styles.halfWidth]}
+            <Controller
+              control={control}
+              name="expiry"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  label="Expiry Date *"
+                  value={formatExpiry(value)}
+                  onChangeText={(text) => {
+                    const cleaned = text.replace(/\D/g, "");
+                    if (cleaned.length <= 4) {
+                      onChange(cleaned);
+                    }
+                  }}
+                  placeholder="MM/YY"
+                  keyboardType="numeric"
+                  maxLength={5}
+                  mode="outlined"
+                  style={[styles.input, styles.halfWidth]}
+                  error={!!errors.expiry}
+                />
+              )}
             />
 
-            <TextInput
-              label="CVC *"
-              value={creditCard.cvc}
-              onChangeText={(value) => handleInputChange("cvc", value)}
-              placeholder="123"
-              keyboardType="numeric"
-              maxLength={4}
-              secureTextEntry
-              mode="outlined"
-              style={[styles.input, styles.halfWidth]}
+            <Controller
+              control={control}
+              name="cvc"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  label="CVC *"
+                  value={value}
+                  onChangeText={(text) => {
+                    const cleaned = text.replace(/\D/g, "");
+                    if (cleaned.length <= 4) {
+                      onChange(cleaned);
+                    }
+                  }}
+                  placeholder="123"
+                  keyboardType="numeric"
+                  maxLength={4}
+                  secureTextEntry
+                  mode="outlined"
+                  style={[styles.input, styles.halfWidth]}
+                  error={!!errors.cvc}
+                />
+              )}
             />
           </View>
+          <HelperText type="error" visible={!!errors.expiry}>
+            {errors.expiry?.message}
+          </HelperText>
+          <HelperText type="error" visible={!!errors.cvc}>
+            {errors.cvc?.message}
+          </HelperText>
 
-          <TextInput
-            label="Cardholder Name *"
-            value={creditCard.cardholderName}
-            onChangeText={(value) => handleInputChange("cardholderName", value)}
-            placeholder="As it appears on the card"
-            autoCapitalize="words"
-            mode="outlined"
-            style={styles.input}
+          <Controller
+            control={control}
+            name="cardholderName"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                label="Cardholder Name *"
+                value={value}
+                onChangeText={onChange}
+                placeholder="As it appears on the card"
+                autoCapitalize="words"
+                mode="outlined"
+                style={styles.input}
+                error={!!errors.cardholderName}
+              />
+            )}
           />
+          <HelperText type="error" visible={!!errors.cardholderName}>
+            {errors.cardholderName?.message}
+          </HelperText>
         </Card.Content>
       </Card>
 
@@ -227,7 +247,7 @@ const PaymentFormScreen: React.FC = () => {
             <View key={item.productId} style={styles.paymentItem}>
               <Text style={styles.paymentItemName}>{item.name}</Text>
               <Text style={styles.paymentItemTotal}>
-                ${(item.price * item.quantity).toFixed(2)}
+                {formatPriceCOP(item.price * item.quantity)}
               </Text>
             </View>
           ))}
@@ -236,7 +256,9 @@ const PaymentFormScreen: React.FC = () => {
 
           <View style={styles.paymentTotal}>
             <Text style={styles.paymentTotalLabel}>Total Amount:</Text>
-            <Text style={styles.paymentTotalAmount}>${total.toFixed(2)}</Text>
+            <Text style={styles.paymentTotalAmount}>
+              {formatTotalCOP(total)}
+            </Text>
           </View>
         </Card.Content>
       </Card>
@@ -252,14 +274,13 @@ const PaymentFormScreen: React.FC = () => {
 
           <Button
             mode="contained"
-            icon="credit-card"
-            onPress={handleProcessPayment}
-            disabled={isProcessing}
-            loading={isProcessing}
+            icon="arrow-right"
+            onPress={handleSubmit(onSubmit)}
+            disabled={!isValid}
             style={styles.payButton}
             labelStyle={styles.payButtonText}
           >
-            Complete Purchase
+            Continue to Summary
           </Button>
 
           <Chip icon="shield-check" style={styles.securityChip}>

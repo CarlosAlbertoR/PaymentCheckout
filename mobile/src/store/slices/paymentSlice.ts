@@ -37,4 +37,5 @@ const paymentSlice = createSlice({
 
 export const { setCreditCard, setProcessing, setError, clearPayment } =
   paymentSlice.actions;
+
 export default paymentSlice.reducer;

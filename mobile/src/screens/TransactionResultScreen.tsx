@@ -7,6 +7,7 @@ import { useTheme, Card, Button, Chip, Divider } from "react-native-paper";
 import { RootStackParamList, Transaction } from "../types";
 import { RootState, AppDispatch } from "../store";
 import { clearCart } from "../store/slices/cartSlice";
+import { formatPriceCOP, formatTotalCOP } from "../utils/currency";
 import { resetTransaction } from "../store/slices/transactionSlice";
 
 type TransactionResultScreenNavigationProp = StackNavigationProp<
@@ -42,7 +43,9 @@ const TransactionResultScreen: React.FC = () => {
   };
 
   const handleTryAgain = () => {
-    navigation.navigate("PaymentForm");
+    navigation.navigate("PaymentForm", {
+      customerInfo: transaction.customerInfo,
+    });
   };
 
   const getStatusIcon = () => {
@@ -123,7 +126,7 @@ const TransactionResultScreen: React.FC = () => {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Amount Paid:</Text>
             <Text style={styles.detailValue}>
-              ${transaction.totalAmount.toFixed(2)}
+              {formatTotalCOP(transaction.totalAmount)}
             </Text>
           </View>
 
@@ -147,11 +150,11 @@ const TransactionResultScreen: React.FC = () => {
               <View style={styles.productInfo}>
                 <Text style={styles.productName}>{item.name}</Text>
                 <Text style={styles.productDetails}>
-                  Quantity: {item.quantity} x ${item.price.toFixed(2)}
+                  Quantity: {item.quantity} x {formatPriceCOP(item.price)}
                 </Text>
               </View>
               <Text style={styles.productTotal}>
-                ${(item.price * item.quantity).toFixed(2)}
+                {formatPriceCOP(item.price * item.quantity)}
               </Text>
             </View>
           ))}

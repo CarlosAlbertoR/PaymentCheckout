@@ -22,6 +22,7 @@ import {
   setSelectedCategory,
 } from "../store/slices/productsSlice";
 import { addQuantityToCart } from "../store/slices/cartSlice";
+import { formatPriceCOP } from "../utils/currency";
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -97,7 +98,7 @@ const HomeScreen: React.FC = () => {
         </Text>
         <View style={styles.productFooter}>
           <Text style={[styles.productPrice, { color: theme.colors.primary }]}>
-            ${item.price.toFixed(2)}
+            {formatPriceCOP(item.price)}
           </Text>
           <Button
             mode="contained"

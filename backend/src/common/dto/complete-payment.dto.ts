@@ -45,10 +45,17 @@ export class CreditCardDto {
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(0[1-9]|1[0-2])\/\d{2}$/, {
-    message: 'Expiry must be in MM/YY format',
+  @Matches(/^(0[1-9]|1[0-2])$/, {
+    message: 'Expiry month must be in MM format (01-12)',
   })
-  expiry: string;
+  exp_month: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{2}$/, {
+    message: 'Expiry year must be in YY format',
+  })
+  exp_year: string;
 
   @IsString()
   @IsNotEmpty()

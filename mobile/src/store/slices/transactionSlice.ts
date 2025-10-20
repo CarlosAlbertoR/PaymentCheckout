@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Transaction, CompletePaymentRequest } from "../../types";
-import { getApiUrl } from "../../config/api.config";
+import { apiService } from "../../services/api.service";
+import { checkBackendConnection } from "../../utils/backendCheck";
 
 interface TransactionState {
   currentTransaction: Transaction | null;
@@ -19,21 +20,29 @@ const initialState: TransactionState = {
 // Async thunk para procesar pago completo
 export const processPayment = createAsyncThunk(
   "transaction/processPayment",
-  async (paymentData: CompletePaymentRequest) => {
-    const response = await fetch(getApiUrl("/transactions/complete-payment"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(paymentData),
-    });
+  async (paymentData: CompletePaymentRequest, { rejectWithValue }) => {
+    try {
+      console.log("🚀 Sending payment request...");
+      console.log("📦 Payment data:", paymentData);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Payment failed");
+      // Verificar conectividad primero
+      const connectionCheck = await checkBackendConnection();
+      if (!connectionCheck.isConnected) {
+        console.error("❌ Backend connection failed:", connectionCheck.error);
+        return rejectWithValue(
+          connectionCheck.error ||
+            "Backend server is not available. Please check your connection."
+        );
+      }
+      console.log("✅ Backend is reachable");
+
+      const result = await apiService.processPayment(paymentData);
+      console.log("✅ Payment result:", result);
+      return result;
+    } catch (error: any) {
+      console.error("❌ Payment Error:", error);
+      return rejectWithValue(error.message || "Payment processing failed");
     }
-
-    return response.json();
   }
 );
 
@@ -66,15 +75,19 @@ const transactionSlice = createSlice({
       })
       .addCase(processPayment.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentTransaction = action.payload.transaction;
+        const payload = action.payload as any;
+        state.currentTransaction = payload.transaction;
         state.status =
-          action.payload.wompiResponse.data.status === "APPROVED"
+          payload.wompiResponse?.data?.status === "APPROVED"
             ? "completed"
             : "failed";
       })
       .addCase(processPayment.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Payment failed";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Payment failed";
         state.status = "failed";
       });
   },

@@ -7,7 +7,8 @@ import { Product } from '../../entities/product.entity';
 import { CreateTransactionDto } from '../../common/dto/create-transaction.dto';
 import { ProcessPaymentDto } from '../../common/dto/payment.dto';
 import { CompletePaymentDto } from '../../common/dto/complete-payment.dto';
-import { ProductItem, CompletePaymentResponse } from '../../common/types';
+import { ProductItem } from '../../common/types';
+import { WompiService } from '../wompi/wompi.service';
 
 @Injectable()
 export class TransactionsService {
@@ -18,6 +19,7 @@ export class TransactionsService {
     private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly wompiService: WompiService,
   ) {}
 
   async createTransaction(
@@ -186,18 +188,45 @@ export class TransactionsService {
       description: completePaymentDto.description,
     });
 
-    // 3. Procesar con Wompi (simulado para sandbox)
-    const wompiResponse = this.simulateWompiPayment(
-      completePaymentDto,
-      transaction.transactionNumber,
+    // 3. Usar CreditCardDto directamente (ya tiene exp_month y exp_year)
+    const creditCardData = {
+      number: completePaymentDto.creditCard.number,
+      cvc: completePaymentDto.creditCard.cvc,
+      exp_month: completePaymentDto.creditCard.exp_month,
+      exp_year: completePaymentDto.creditCard.exp_year,
+      cardholderName: completePaymentDto.creditCard.cardholderName,
+    };
+
+    // 4. Procesar con Wompi (integración real)
+    const wompiResponse = await this.wompiService.processPayment(
+      {
+        transactionId: transaction.id,
+        amount: completePaymentDto.totalAmount,
+        currency: completePaymentDto.currency,
+        reference: transaction.transactionNumber,
+        description: completePaymentDto.description,
+      },
+      creditCardData,
     );
 
-    // 4. Actualizar estado del pago
+    // 5. Actualizar estado del pago
     const updatedPayment = await this.updatePaymentStatus(
       payment.id,
       wompiResponse.data.status === 'APPROVED' ? 'APPROVED' : 'DECLINED',
       wompiResponse,
     );
+
+    // 5. Si el pago fue aprobado, actualizar stock y estado de transacción
+    if (wompiResponse.data.status === 'APPROVED') {
+      await this.updateStockAfterPayment(completePaymentDto.products);
+      await this.updateTransactionStatus(transaction.id, 'COMPLETED');
+      console.log(
+        '✅ Payment approved - Stock updated and transaction completed',
+      );
+    } else {
+      await this.updateTransactionStatus(transaction.id, 'FAILED');
+      console.log('❌ Payment declined - Transaction marked as failed');
+    }
 
     return {
       transaction,
@@ -229,8 +258,8 @@ export class TransactionsService {
             bin: completePaymentDto.creditCard.number.substring(0, 6),
             name: completePaymentDto.creditCard.cardholderName,
             brand: this.detectCardBrand(completePaymentDto.creditCard.number),
-            exp_year: completePaymentDto.creditCard.expiry.split('/')[1],
-            exp_month: completePaymentDto.creditCard.expiry.split('/')[0],
+            exp_year: completePaymentDto.creditCard.exp_year,
+            exp_month: completePaymentDto.creditCard.exp_month,
           },
         },
         status: isApproved ? 'APPROVED' : 'DECLINED',
@@ -265,5 +294,26 @@ export class TransactionsService {
     const timestamp = Date.now().toString();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     return `TXN-${timestamp}-${random}`;
+  }
+
+  /**
+   * Actualiza el stock después de un pago exitoso
+   */
+  private async updateStockAfterPayment(
+    products: ProductItem[],
+  ): Promise<void> {
+    for (const productItem of products) {
+      const product = await this.productRepository.findOne({
+        where: { id: productItem.productId },
+      });
+
+      if (product) {
+        product.stock -= productItem.quantity;
+        await this.productRepository.save(product);
+        console.log(
+          `📦 Updated stock for ${product.name}: -${productItem.quantity} (new stock: ${product.stock})`,
+        );
+      }
+    }
   }
 }
