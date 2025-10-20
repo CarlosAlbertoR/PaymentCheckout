@@ -68,10 +68,10 @@ const PaymentFormScreen: React.FC = () => {
     },
   });
 
-  const cardNumber = watch("number");
+  const cardNumber = watch("number") || "";
 
-  const detectCardBrand = (cardNumber: string): string => {
-    const number = cardNumber.replace(/\s/g, "");
+  const detectCardBrand = (cardNumberInput: string | undefined): string => {
+    const number = (cardNumberInput || "").replace(/\s/g, "");
     if (number.startsWith("4")) return "VISA";
     if (number.startsWith("5") || number.startsWith("2")) return "MASTERCARD";
     if (number.startsWith("3")) return "AMEX";
