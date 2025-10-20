@@ -6,7 +6,7 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-class ApiService {
+export class ApiService {
   private baseUrl: string;
 
   constructor() {
@@ -60,6 +60,10 @@ class ApiService {
     return this.request(`/products/${id}`);
   }
 
+  async getCategories() {
+    return this.request("/products/categories");
+  }
+
   async seedProducts() {
     return this.request("/products/seed", { method: "POST" });
   }
@@ -74,6 +78,11 @@ class ApiService {
 
   async getTransaction(id: string) {
     return this.request(`/transactions/${id}`);
+  }
+
+  // Alias por compatibilidad de tests
+  async getTransactionStatus(id: string) {
+    return this.getTransaction(id);
   }
 
   async processPayment(data: any) {
