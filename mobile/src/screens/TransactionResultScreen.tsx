@@ -130,6 +130,17 @@ const TransactionResultScreen: React.FC = () => {
             </Text>
           </View>
 
+          {typeof transaction.ivaRate !== "undefined" && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>
+                IVA ({transaction.ivaRate}%):
+              </Text>
+              <Text style={styles.detailValue}>
+                {formatPriceCOP(transaction.ivaAmount || 0)}
+              </Text>
+            </View>
+          )}
+
           <Divider style={styles.divider} />
 
           <View style={styles.detailRow}>

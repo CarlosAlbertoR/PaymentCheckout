@@ -31,6 +31,11 @@ const CartScreen: React.FC = () => {
     (state: RootState) => state.cart
   );
 
+  // IVA calculation (19% default)
+  const ivaRate = 19;
+  const ivaAmount = (total * ivaRate) / 100;
+  const totalWithIva = total + ivaAmount;
+
   const handleUpdateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       dispatch(removeFromCart(productId));
@@ -84,7 +89,6 @@ const CartScreen: React.FC = () => {
           <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
           <View style={styles.itemInfo}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{formatPriceCOP(item.price)}</Text>
 
             <View style={styles.quantityControls}>
               <Button
@@ -115,9 +119,15 @@ const CartScreen: React.FC = () => {
           </View>
 
           <View style={styles.itemActions}>
-            <Text style={styles.itemTotal}>
-              {formatPriceCOP(item.price * item.quantity)}
-            </Text>
+            <View style={styles.itemTotalContainer}>
+              <Text style={styles.itemTotal}>
+                {formatPriceCOP(item.price * item.quantity)}
+              </Text>
+              <Text style={styles.itemTotalIva}>
+                + IVA ({ivaRate}%):{" "}
+                {formatPriceCOP((item.price * item.quantity * ivaRate) / 100)}
+              </Text>
+            </View>
             <Button
               mode="outlined"
               icon="delete"
@@ -188,8 +198,22 @@ const CartScreen: React.FC = () => {
       <Card style={styles.footer}>
         <Card.Content>
           <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Total:</Text>
+            <Text style={styles.totalLabel}>Subtotal:</Text>
             <Text style={styles.totalAmount}>{formatTotalCOP(total)}</Text>
+          </View>
+
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalLabel}>IVA ({ivaRate}%):</Text>
+            <Text style={styles.totalAmount}>{formatTotalCOP(ivaAmount)}</Text>
+          </View>
+
+          <Divider style={styles.divider} />
+
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalLabelFinal}>Total:</Text>
+            <Text style={styles.totalAmountFinal}>
+              {formatTotalCOP(totalWithIva)}
+            </Text>
           </View>
 
           <Divider style={styles.divider} />
@@ -272,6 +296,7 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
+    gap: 16,
   },
   itemName: {
     fontSize: 16,
@@ -299,11 +324,19 @@ const styles = StyleSheet.create({
   itemActions: {
     alignItems: "flex-end",
   },
+  itemTotalContainer: {
+    alignItems: "flex-end",
+    marginBottom: 8,
+  },
   itemTotal: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#00D4AA", // Wompi primary
-    marginBottom: 8,
+    marginBottom: 2,
+  },
+  itemTotalIva: {
+    fontSize: 12,
+    color: "#4A5568", // Wompi onSurfaceVariant
   },
   removeButton: {
     // Paper Button styles are handled by the component
@@ -326,6 +359,16 @@ const styles = StyleSheet.create({
   },
   totalAmount: {
     fontSize: 18,
+    fontWeight: "bold",
+    color: "#00D4AA", // Wompi primary
+  },
+  totalLabelFinal: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1A202C", // Wompi onSurface
+  },
+  totalAmountFinal: {
+    fontSize: 20,
     fontWeight: "bold",
     color: "#00D4AA", // Wompi primary
   },

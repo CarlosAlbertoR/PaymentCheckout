@@ -77,13 +77,18 @@ const PaymentSummaryScreen: React.FC = () => {
         price: item.price,
       }));
 
+      const ivaRate = 19; // default IVA
+      const ivaAmount = (total * ivaRate) / 100;
+      const totalWithIva = total + ivaAmount;
+
       const paymentData = {
         products,
         customerInfo,
-        totalAmount: total,
+        totalAmount: totalWithIva, // Send total with IVA to backend
         creditCard,
         currency: "COP",
         description: `Compra de ${cartItems.length} productos`,
+        ivaRate,
       };
 
       console.log("🚀 Starting payment process...");
@@ -145,9 +150,23 @@ const PaymentSummaryScreen: React.FC = () => {
             <Divider style={styles.divider} />
 
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total:</Text>
+              <Text style={styles.totalLabel}>Subtotal:</Text>
+              <Text style={styles.totalAmount}>{formatTotalCOP(total)}</Text>
+            </View>
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>IVA (19%):</Text>
               <Text style={styles.totalAmount}>
-                {formatTotalCOP(Math.max(total, 1000))}
+                {formatTotalCOP((total * 19) / 100)}
+              </Text>
+            </View>
+
+            <Divider style={styles.divider} />
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabelFinal}>Total:</Text>
+              <Text style={styles.totalAmountFinal}>
+                {formatTotalCOP(total + (total * 19) / 100)}
               </Text>
             </View>
           </Card.Content>
@@ -446,6 +465,16 @@ const styles = StyleSheet.create({
   },
   totalAmount: {
     fontSize: 18,
+    fontWeight: "bold",
+    color: "#00D4AA", // Wompi primary
+  },
+  totalLabelFinal: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1A202C", // Wompi onSurface
+  },
+  totalAmountFinal: {
+    fontSize: 20,
     fontWeight: "bold",
     color: "#00D4AA", // Wompi primary
   },

@@ -22,6 +22,11 @@ const CheckoutScreen: React.FC = () => {
     (state: RootState) => state.cart
   );
 
+  // IVA calculation
+  const ivaRate = 19; // 19% IVA
+  const ivaAmount = (total * ivaRate) / 100;
+  const totalWithIva = total + ivaAmount;
+
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: "",
     email: "",
@@ -115,8 +120,22 @@ const CheckoutScreen: React.FC = () => {
           <Divider style={styles.divider} />
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total:</Text>
+            <Text style={styles.totalLabel}>Subtotal:</Text>
             <Text style={styles.totalAmount}>{formatTotalCOP(total)}</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>IVA ({ivaRate}%):</Text>
+            <Text style={styles.totalAmount}>{formatTotalCOP(ivaAmount)}</Text>
+          </View>
+
+          <Divider style={styles.divider} />
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabelFinal}>Total:</Text>
+            <Text style={styles.totalAmountFinal}>
+              {formatTotalCOP(totalWithIva)}
+            </Text>
           </View>
         </Card.Content>
       </Card>
@@ -215,6 +234,16 @@ const styles = StyleSheet.create({
   },
   totalAmount: {
     fontSize: 20,
+    fontWeight: "bold",
+    color: "#00D4AA", // Wompi primary
+  },
+  totalLabelFinal: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1A202C", // Wompi onSurface
+  },
+  totalAmountFinal: {
+    fontSize: 22,
     fontWeight: "bold",
     color: "#00D4AA", // Wompi primary
   },
