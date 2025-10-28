@@ -23,13 +23,19 @@ export class TransactionsService {
   ) {}
 
   async createTransaction(
-    createTransactionDto: CreateTransactionDto,
+    createTransactionDto: CreateTransactionDto & { ivaRate?: number },
   ): Promise<Transaction> {
     // Validar stock antes de crear la transacción
     await this.validateStock(createTransactionDto.products);
 
     // Generar número de transacción único
     const transactionNumber = this.generateTransactionNumber();
+
+    // Calcular IVA (por defecto 19%)
+    const ivaRate = createTransactionDto.ivaRate ?? 19;
+    const ivaAmount = parseFloat(
+      ((createTransactionDto.totalAmount * ivaRate) / 100).toFixed(2),
+    );
 
     // Crear la transacción
     const transaction = this.transactionRepository.create({
@@ -38,6 +44,8 @@ export class TransactionsService {
       status: 'PENDING',
       customerInfo: createTransactionDto.customerInfo,
       products: createTransactionDto.products,
+      ivaRate,
+      ivaAmount,
     });
 
     return this.transactionRepository.save(transaction);
@@ -175,6 +183,7 @@ export class TransactionsService {
       products: completePaymentDto.products,
       customerInfo: completePaymentDto.customerInfo,
       totalAmount: completePaymentDto.totalAmount,
+      ivaRate: completePaymentDto.ivaRate ?? 19,
     };
 
     const transaction = await this.createTransaction(createTransactionDto);

@@ -92,4 +92,8 @@ export class CompletePaymentDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsNumber()
+  @IsOptional()
+  ivaRate?: number; // IVA percentage sent by client, defaults to 19 if not provided
 }

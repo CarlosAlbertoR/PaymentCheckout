@@ -39,6 +39,28 @@ export class Transaction {
   @Column('jsonb', { nullable: true })
   products: any[];
 
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+    default: 19.0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  ivaRate: number;
+
+  @Column('decimal', {
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  ivaAmount: number;
+
   @OneToMany(() => Payment, (payment) => payment.transaction)
   payments: Payment[];
 

@@ -39,6 +39,8 @@ export interface Transaction {
   status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED";
   customerInfo: CustomerInfo;
   products: CartItem[];
+  ivaRate?: number;
+  ivaAmount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +58,7 @@ export interface CompletePaymentRequest {
   creditCard: CreditCardInfo;
   currency: string;
   description: string;
+  ivaRate?: number;
 }
 
 export interface PaymentResponse {
